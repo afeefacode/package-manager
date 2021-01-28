@@ -1,0 +1,23 @@
+{
+    "name": "afeefacode/package-manager",
+    "version": "0.0.1",
+    "type": "library",
+    "description": "Manage package versions and releases",
+    "license": "MIT",
+    "homepage": "https://github.com/afeefacode/package-manager",
+    "authors": [
+        {
+            "name": "Afeefa Kollektiv",
+            "email": "kollektiv@afeefa.de"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "afeefacode/cli-app": "^0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Afeefa\\Component\\Package\\": "src"
+        }
+    }
+  }

@@ -1,5 +1,5 @@
 {
-    "name": "afeefacode/package-manager",
+    "name": "afeefa/package-manager",
     "version": "0.0.2",
     "type": "library",
     "description": "Manage package versions and releases",

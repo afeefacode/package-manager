@@ -5,7 +5,7 @@ use Afeefa\Component\Package\Commands\Check;
 use Afeefa\Component\Package\Commands\Release;
 use Afeefa\Component\Package\Helpers;
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once getcwd() . '/vendor/autoload.php';
 
 $version = Helpers::getVersion();
 $packages = Helpers::getPackages();

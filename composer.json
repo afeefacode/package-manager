@@ -13,7 +13,7 @@
     ],
     "require": {
         "php": ">=7.4",
-        "afeefacode/cli-app": "^0"
+        "afeefa/cli-app": "^0"
     },
     "autoload": {
         "psr-4": {

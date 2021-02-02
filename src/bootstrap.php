@@ -1,26 +1,28 @@
 <?php
 
 use Afeefa\Component\Cli\Application;
-use Afeefa\Component\Package\Commands\Check;
+use Afeefa\Component\Package\Commands\Install;
 use Afeefa\Component\Package\Commands\Release;
 use Afeefa\Component\Package\Helpers;
 
 require_once getcwd() . '/vendor/autoload.php';
 
 $version = Helpers::getVersion();
-$packages = Helpers::getPackages();
+$packages = Helpers::getReleasePackages();
 
 $infos = [
-    'Project version' => $version ?: 'version not set'
+    'Project version' => $version ?: 'version not yet set'
 ];
 
+$infos['Library versions'] = count($packages) ? '' : 'no packages defined yet';
+
 foreach ($packages as $package) {
-    $infos[$package->name . " ($package->type)"] = "file: $package->version tag: $package->tag";
+    $infos[' - ' . $package->name . " ($package->type)"] = "file: $package->version tag: $package->tag";
 }
 
 (new Application('Afeefa Package Manager'))
 
-    ->runBefore(Check::class, 'Check setup')
+    ->runBefore(Install::class)
 
     ->command('release', Release::class, 'Release a new version')
 

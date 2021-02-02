@@ -6,12 +6,13 @@ use Webmozart\PathUtil\Path;
 
 class Helpers
 {
-    public static function getPackages(): array
+    public static function getReleasePackages(): array
     {
-        $packageFile = Path::join(getcwd(), '.afeefa', 'package', 'packages.php');
+        $release = Path::join(getcwd(), '.afeefa', 'package', 'release.php');
 
-        if (file_exists($packageFile)) {
-            return include $packageFile;
+        if (file_exists($release)) {
+            $releaseManager = include $release;
+            return $releaseManager->getPackages();
         }
 
         return [];

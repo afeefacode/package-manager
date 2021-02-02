@@ -62,9 +62,9 @@ class Release extends Command
         $versionFileRelative = Path::makeRelative($versionFile, getcwd());
 
         $this->printShellCommand("file_put_contents($versionFileRelative, '0.0.0')");
-        file_put_contents($versionFile, $nextVersion);
+        file_put_contents($versionFile, "$nextVersion\n");
 
-        $packages = Helpers::getPackages();
+        $packages = Helpers::getReleasePackages();
 
         foreach ($packages as $package) {
             $package->setVersion($nextVersion);

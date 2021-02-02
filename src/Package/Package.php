@@ -2,7 +2,8 @@
 
 namespace Afeefa\Component\Package\Package;
 
-use stdClass;
+use Afeefa\Component\Package\Installer;
+use Afeefa\Component\Package\ReleaseManager;
 use Symfony\Component\Process\Process;
 use Webmozart\PathUtil\Path;
 
@@ -13,17 +14,39 @@ class Package
 
     public $type = null;
     public $path = null;
+    public $files = [];
 
-    public function type($type)
+    public static function composer(): Composer
+    {
+        return new Composer();
+    }
+
+    public static function npm(): Npm
+    {
+        return new Npm();
+    }
+
+    public function type($type): Package
     {
         $this->type = $type;
         return $this;
     }
 
-    public function path($path)
+    public function path($path): Package
     {
         $this->path = $path;
         return $this;
+    }
+
+    public function getInstaller(): ?Installer
+    {
+        $installFile = Path::join($this->path, '.afeefa', 'package', 'install.php');
+
+        if (file_exists($installFile)) {
+            return include $installFile;
+        }
+
+        return null;
     }
 
     public function __get($property)
@@ -49,16 +72,32 @@ class Package
         file_put_contents($file, $content);
     }
 
+    public function getReleaseManager(): ?ReleaseManager
+    {
+        $releaseFile = Path::join($this->path, '.afeefa', 'package', 'release.php');
+
+        if (file_exists($releaseFile)) {
+            return include $releaseFile;
+        }
+
+        return null;
+    }
+
+    public function getPackageFile(): string
+    {
+        return '';
+    }
+
     protected function getName(): string
     {
         $json = $this->getPackageFileJson();
         return $json->name;
     }
 
-    protected function getVersion(): string
+    protected function getVersion(): ?string
     {
         $json = $this->getPackageFileJson();
-        return $json->version;
+        return $json->version ?? null;
     }
 
     protected function getTag(): string
@@ -69,15 +108,9 @@ class Package
         return trim($process->getOutput());
     }
 
-    protected function getPackageFile(): string
+    protected function getPackageFileJson(): \stdClass
     {
-        return '';
-    }
-
-    protected function getPackageFileJson(): stdClass
-    {
-        $file = Path::join($this->getPackageFile());
-        $content = file_get_contents($file);
+        $content = file_get_contents($this->getPackageFile());
         return json_decode($content);
     }
 }

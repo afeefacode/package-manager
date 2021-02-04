@@ -13,7 +13,7 @@
     ],
     "require": {
         "php": ">=7.4",
-        "afeefa/cli-app": "^0.0.7",
+        "afeefa/cli-app": "^0",
         "webmozart/path-util": "^2.3",
         "symfony/process": "^v5.2"
     },

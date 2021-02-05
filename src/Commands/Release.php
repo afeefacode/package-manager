@@ -10,6 +10,36 @@ class Release extends Command
 {
     protected function executeCommand()
     {
+        // require a version in composer.json or package.json
+
+        $packages = Helpers::getReleasePackages();
+
+        $version = Helpers::getVersion();
+
+        foreach ($packages as $package) {
+            if ($package->version === null) {
+                $packageFile = $package->getPackageFile();
+                $relativePackageFile = Path::makeRelative($packageFile, getcwd());
+                $this->printInfo('There is no version field in ' . $relativePackageFile);
+                $createVersionField = $this->printConfirm('Create that version field?');
+                if ($createVersionField) {
+                    $this->replaceInFile($packageFile, function ($content) use ($package, $version) {
+                        $packageNamePattern = preg_quote($package->name, '/');
+                        return preg_replace(
+                            '/^(\s+)("name": "' . $packageNamePattern . '",\n)/m',
+                            "$1$2$1\"version\": \"$version\",\n",
+                            $content
+                        );
+                    });
+                    $this->printBullet("Version field added in <info>$packageFile</info>");
+                } else {
+                    $this->abortCommand('Version field required');
+                }
+            }
+        }
+
+        // have everything committed beforehand
+
         try {
             $this->runProcess('test -z "$(git status --porcelain)"');
         } catch (\Exception $e) {
@@ -19,7 +49,18 @@ class Release extends Command
 
         $version = Helpers::getVersion();
 
-        $this->printText('Current project version is: <info>' . $version . '</info>');
+        $this->printText("Project version is: <info>$version</info> (<fg=blue>.afeefa/package/version.txt</>)");
+        $this->printText('Library versions:');
+        if (count($packages)) {
+            foreach ($packages as $package) {
+                $file = basename($package->getPackageFile());
+                $this->printText(" - $package->name: <info>$package->version</info> (<fg=blue>$file</>) <info>$package->tag</info> (<fg=blue>git tag</>)");
+            }
+        } else {
+            $this->printBullet('No packages defined yet in .afeefa/package/release.php');
+        }
+
+        // select next version
 
         [$major, $minor, $patch] = explode('.', $version);
 

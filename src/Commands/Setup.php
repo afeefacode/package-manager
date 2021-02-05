@@ -3,21 +3,60 @@
 namespace Afeefa\Component\Package\Commands;
 
 use Afeefa\Component\Cli\Command;
-use Afeefa\Component\Package\Actions\InstallPackage;
-use Afeefa\Component\Package\Helpers;
+use Afeefa\Component\Package\Actions\SetupPackage;
 use Afeefa\Component\Package\Package\Package;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 use Webmozart\PathUtil\Path;
 
-class Install extends Command
+class Setup extends Command
 {
+    protected function setArguments()
+    {
+        $packages = $this->findPackagesToConfigure();
+
+        $this
+            ->addSelectableArgument(
+                'package_name',
+                [...array_keys($packages), 'all'],
+                InputArgument::OPTIONAL,
+                'The package to configure'
+            )
+            ->addOption(
+                'reset',
+                null,
+                InputOption::VALUE_NONE,
+                'Reset and restart configuration',
+                null
+            );
+    }
+
     protected function executeCommand()
+    {
+        $packageName = $this->getArgument('package_name');
+
+        $packages = $this->findPackagesToConfigure();
+
+        $packages = $packageName === 'all' ? $packages : [$packages[$packageName]];
+
+        foreach ($packages as $package) {
+            $this->runAction(SetupPackage::class, [
+                'package' => $package,
+                'reset' => $this->getOption('reset')
+            ]);
+        }
+    }
+
+    private function findPackagesToConfigure(): array
     {
         // find all packages that can be installed
         $packages = [];
 
         // self package
         $package = Package::composer()->path(getcwd());
-        $packages[$package->name] = $package;
+        if (file_exists(Path::join($package->path, '.afeefa', 'package', 'install.php'))) {
+            $packages[$package->name] = $package;
+        }
 
         // packages from vendor
         $composerVendorPath = Path::join(getcwd(), 'vendor');
@@ -40,37 +79,6 @@ class Install extends Command
             }
         }
 
-        foreach ($packages as $package) {
-            $this->runActionWithoutTitle(InstallPackage::class, [
-                'package' => $package
-            ]);
-        }
-
-        // check release version
-
-        $packages = Helpers::getReleasePackages();
-        $version = Helpers::getVersion();
-
-        foreach ($packages as $package) {
-            if ($package->version === null) {
-                $packageFile = $package->getPackageFile();
-                $relativePackageFile = Path::makeRelative($packageFile, getcwd());
-                $this->printInfo('There is no version field in ' . $relativePackageFile);
-                $createVersionField = $this->printConfirm('Create that version field?');
-                if ($createVersionField) {
-                    $this->replaceInFile($packageFile, function ($content) use ($package, $version) {
-                        $packageNamePattern = preg_quote($package->name, '/');
-                        return preg_replace(
-                            '/^(\s+)("name": "' . $packageNamePattern . '",\n)/m',
-                            "$1$2$1\"version\": \"$version\",\n",
-                            $content
-                        );
-                    });
-                    $this->printBullet("Version field added in <info>$packageFile</info>");
-                } else {
-                    $this->abortCommand('Version field required');
-                }
-            }
-        }
+        return $packages;
     }
 }

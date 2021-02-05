@@ -5,13 +5,18 @@ namespace Afeefa\Component\Package\Actions;
 use Afeefa\Component\Cli\Action;
 use Webmozart\PathUtil\Path;
 
-class InstallPackage extends Action
+class SetupPackage extends Action
 {
-    private $titlePrinted = false;
+    protected function getActionTitle()
+    {
+        $package = $this->getArgument('package');
+        return 'Setup ' . $package->name;
+    }
 
     protected function executeAction()
     {
         $package = $this->getArgument('package');
+        $reset = $this->getArgument('reset');
 
         $installer = $package->getInstaller();
 
@@ -19,10 +24,11 @@ class InstallPackage extends Action
             return;
         }
 
-        $missingFiles = array_filter($installer->getFiles(), fn($file) => !$file->exists());
+        $missingFiles = $reset
+            ? $installer->getFiles()
+            : array_filter($installer->getFiles(), fn($file) => !$file->exists());
 
         if (count($missingFiles)) {
-            $this->checkPrintTitle();
             $this->printInfo('The following files are missing:');
             $this->printList(array_map(function ($missingFile) {
                 return Path::makeRelative($missingFile->path, getcwd());
@@ -55,15 +61,7 @@ class InstallPackage extends Action
                 $this->abortCommand('These files are required');
             }
         }
-    }
 
-    private function checkPrintTitle()
-    {
-        if (!$this->titlePrinted) {
-            $package = $this->getArgument('package');
-            $this->printCommandTitle('Setup package ' . $package->name);
-        }
-
-        $this->titlePrinted = true;
+        $this->printBullet('<info>Finished</info>');
     }
 }

@@ -20,7 +20,7 @@ class Helpers
 
     public static function getVersion(): string
     {
-        $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'install', 'version.txt');
+        $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'release', 'version.txt');
 
         if (file_exists($versionFile)) {
             return trim(file_get_contents($versionFile));

@@ -55,7 +55,7 @@ class Release extends Command
 
         $version = Helpers::getVersion();
 
-        $this->printText("Project version is: <info>$version</info> (<fg=blue>.afeefa/package/install/version.txt</>)");
+        $this->printText("Project version is: <info>$version</info> (<fg=blue>.afeefa/package/release/version.txt</>)");
         $this->printText('Library versions:');
         if (count($packages)) {
             foreach ($packages as $package) {

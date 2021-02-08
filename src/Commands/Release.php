@@ -10,11 +10,17 @@ class Release extends Command
 {
     protected function executeCommand()
     {
-        // require a version in composer.json or package.json
-
         $packages = Helpers::getReleasePackages();
-
         $version = Helpers::getVersion();
+
+        // require afeefa-package to be setup
+
+        $installMarker = Path::join(getcwd(), '.afeefa', 'package', '.installed');
+        if (!file_exists($installMarker)) {
+            $this->abortCommand('Setup missing: Run afeefa-package setup afeefa/package-manager');
+        }
+
+        // require a version in composer.json or package.json
 
         foreach ($packages as $package) {
             if ($package->version === null) {

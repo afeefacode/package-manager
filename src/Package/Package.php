@@ -2,7 +2,7 @@
 
 namespace Afeefa\Component\Package\Package;
 
-use Afeefa\Component\Package\Installer;
+use Afeefa\Component\Package\InstallAction;
 use Afeefa\Component\Package\ReleaseManager;
 use Symfony\Component\Process\Process;
 use Webmozart\PathUtil\Path;
@@ -15,6 +15,8 @@ class Package
     public $type = null;
     public $path = null;
     public $files = [];
+
+    public $installAction;
 
     public static function composer(): Composer
     {
@@ -38,15 +40,26 @@ class Package
         return $this;
     }
 
-    public function getInstaller(): ?Installer
+    public function hasInstallAction(): bool
     {
-        $installFile = Path::join($this->path, '.afeefa', 'package', 'install.php');
-
-        if (file_exists($installFile)) {
-            return include $installFile;
+        if ($this->installAction) {
+            return true;
         }
 
-        return null;
+        $installFile = Path::join($this->path, '.afeefa', 'package', 'install', 'install.php');
+
+        return file_exists($installFile);
+    }
+
+    public function getInstallAction(): ?string
+    {
+        $installFile = Path::join($this->path, '.afeefa', 'package', 'install', 'install.php');
+
+        if (!$this->installAction && file_exists($installFile)) {
+            $this->installAction = include $installFile;
+        }
+
+        return $this->installAction;
     }
 
     public function __get($property)

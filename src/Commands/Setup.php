@@ -3,7 +3,6 @@
 namespace Afeefa\Component\Package\Commands;
 
 use Afeefa\Component\Cli\Command;
-use Afeefa\Component\Package\Actions\SetupPackage;
 use Afeefa\Component\Package\Package\Package;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
@@ -13,14 +12,17 @@ class Setup extends Command
 {
     protected function setArguments()
     {
-        $packages = $this->findPackagesToConfigure();
+        $packages = array_keys($this->findPackagesToConfigure());
+        if (count($packages)) {
+            $packages[] = 'all';
+        }
 
         $this
             ->addSelectableArgument(
                 'package_name',
-                [...array_keys($packages), 'all'],
+                $packages,
                 InputArgument::OPTIONAL,
-                'The package to configure'
+                count($packages) ? 'The package to configure' : 'No packages to configure found'
             )
             ->addOption(
                 'reset',
@@ -39,11 +41,15 @@ class Setup extends Command
 
         $packages = $packageName === 'all' ? $packages : [$packages[$packageName]];
 
+        /** @var Package */
         foreach ($packages as $package) {
-            $this->runAction(SetupPackage::class, [
-                'package' => $package,
-                'reset' => $this->getOption('reset')
-            ]);
+            $InstallAction = $package->getInstallAction();
+            if ($InstallAction) {
+                $this->runAction($InstallAction, [
+                    'package' => $package,
+                    'reset' => $this->getOption('reset')
+                ]);
+            }
         }
     }
 
@@ -54,7 +60,7 @@ class Setup extends Command
 
         // self package
         $package = Package::composer()->path(getcwd());
-        if (file_exists(Path::join($package->path, '.afeefa', 'package', 'install.php'))) {
+        if ($package->hasInstallAction()) {
             $packages[$package->name] = $package;
         }
 
@@ -67,8 +73,8 @@ class Setup extends Command
                 foreach (new \DirectoryIterator($vendorPath) as $packageFileInfo) {
                     if (!$packageFileInfo->isDot() && $packageFileInfo->isDir()) {
                         // package has .afeefa/package dir --> run setup
-                        if (file_exists(Path::join($packageFileInfo->getRealPath(), '.afeefa', 'package', 'install.php'))) {
-                            $package = Package::composer()->path($packageFileInfo->getRealPath());
+                        $package = Package::composer()->path($packageFileInfo->getRealPath());
+                        if ($package->hasInstallAction()) {
                             // filter out copies such as package-backup
                             if ($package->name === $composerVendorFileInfo->getBasename() . '/' . $packageFileInfo->getBasename()) {
                                 $packages[$package->name] = $package;

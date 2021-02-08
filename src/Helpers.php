@@ -8,7 +8,7 @@ class Helpers
 {
     public static function getReleasePackages(): array
     {
-        $release = Path::join(getcwd(), '.afeefa', 'package', 'release.php');
+        $release = Path::join(getcwd(), '.afeefa', 'package', 'release', 'release.php');
 
         if (file_exists($release)) {
             $releaseManager = include $release;
@@ -20,7 +20,7 @@ class Helpers
 
     public static function getVersion(): string
     {
-        $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'version.txt');
+        $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'install', 'version.txt');
 
         if (file_exists($versionFile)) {
             return trim(file_get_contents($versionFile));

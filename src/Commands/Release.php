@@ -55,7 +55,7 @@ class Release extends Command
 
         $version = Helpers::getVersion();
 
-        $this->printText("Project version is: <info>$version</info> (<fg=blue>.afeefa/package/version.txt</>)");
+        $this->printText("Project version is: <info>$version</info> (<fg=blue>.afeefa/package/install/version.txt</>)");
         $this->printText('Library versions:');
         if (count($packages)) {
             foreach ($packages as $package) {
@@ -105,7 +105,7 @@ class Release extends Command
             $this->abortCommand();
         }
 
-        $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'version.txt');
+        $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'install', 'version.txt');
         $versionFileRelative = Path::makeRelative($versionFile, getcwd());
 
         $this->printShellCommand("file_put_contents($versionFileRelative, '0.0.0')");

@@ -105,7 +105,7 @@ class Release extends Command
             $this->abortCommand();
         }
 
-        $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'install', 'version.txt');
+        $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'release', 'version.txt');
         $versionFileRelative = Path::makeRelative($versionFile, getcwd());
 
         $this->printShellCommand("file_put_contents($versionFileRelative, '0.0.0')");

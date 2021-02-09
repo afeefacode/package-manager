@@ -186,7 +186,7 @@ class Release extends Command
                 'git push origin v' . $nextVersion
             ], $package->path);
 
-            $this->printBullet("<info>Finish</info>: $package->name has now version $version");
+            $this->printBullet("<info>Finish</info>: $package->name has now version $nextVersion");
         }
     }
 }

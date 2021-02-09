@@ -88,13 +88,13 @@ class Release extends Command
         if (count($packages)) {
             foreach ($packages as $package) {
                 $versionFile = Path::join($package->path, '.afeefa', 'package', 'release', 'version.txt');
-                $version = '';
+                $packageVersion = '';
                 if (file_exists($versionFile)) {
-                    $version = '<info>' . trim(file_get_contents($versionFile)) . '</info> (<fg=blue>version.txt</>)';
+                    $packageVersion = '<info>' . trim(file_get_contents($versionFile)) . '</info> (<fg=blue>version.txt</>) ';
                 }
 
                 $file = basename($package->getPackageFile());
-                $this->printText(" - $package->name: <info>$package->version</info> (<fg=blue>$file</>) <info>$package->tag</info> (<fg=blue>git tag</>)");
+                $this->printText(" - $package->name: $packageVersion<info>$package->version</info> (<fg=blue>$file</>) <info>$package->tag</info> (<fg=blue>git tag</>)");
             }
         } else {
             $this->printBullet('No packages defined yet in .afeefa/package/release.php');

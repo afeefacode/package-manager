@@ -160,6 +160,8 @@ class Release extends Command
             $content = file_get_contents($packageFile);
             $content = preg_replace('/"version": ".+?"/', "\"version\": \"$version\"", $content);
             file_put_contents($packageFile, $content);
+
+            $this->printBullet("$package->name: <info>$version</info>");
         }
 
         // push new versions

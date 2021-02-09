@@ -178,10 +178,15 @@ class Release extends Command
             $this->abortCommand();
         }
 
-        // $this->runProcess('git commit -am "set version: v' . $nextVersion . '"');
-        // $this->runProcess('git push');
+        foreach ($packages as $package) {
+            $this->runProcesses([
+                'git commit -am "set version: v' . $nextVersion . '"',
+                'git push',
+                'git tag v' . $nextVersion,
+                'git push origin v' . $nextVersion
+            ], $package->path);
 
-        // $this->runProcess('git tag v' . $nextVersion);
-        // $this->runProcess('git push origin v' . $nextVersion);
+            $this->printBullet("<info>Finish</info>: $package->name has now version $version");
+        }
     }
 }

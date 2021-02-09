@@ -87,6 +87,12 @@ class Release extends Command
         $this->printText('Library versions:');
         if (count($packages)) {
             foreach ($packages as $package) {
+                $versionFile = Path::join($package->path, '.afeefa', 'package', 'release', 'version.txt');
+                $version = '';
+                if (file_exists($versionFile)) {
+                    $version = '<info>' . trim(file_get_contents($versionFile)) . '</info> (<fg=blue>version.txt</>)';
+                }
+
                 $file = basename($package->getPackageFile());
                 $this->printText(" - $package->name: <info>$package->version</info> (<fg=blue>$file</>) <info>$package->tag</info> (<fg=blue>git tag</>)");
             }
@@ -151,17 +157,17 @@ class Release extends Command
 
             $versionFile = Path::join($package->path, '.afeefa', 'package', 'release', 'version.txt');
             if (file_exists($versionFile)) {
-                file_put_contents($versionFile, "$version\n");
+                file_put_contents($versionFile, "$nextVersion\n");
             }
 
             // composer version
 
             $packageFile = $package->getPackageFile();
             $content = file_get_contents($packageFile);
-            $content = preg_replace('/"version": ".+?"/', "\"version\": \"$version\"", $content);
+            $content = preg_replace('/"version": ".+?"/', "\"version\": \"$nextVersion\"", $content);
             file_put_contents($packageFile, $content);
 
-            $this->printBullet("$package->name: <info>$version</info>");
+            $this->printBullet("$package->name: <info>$nextVersion</info>");
         }
 
         // push new versions

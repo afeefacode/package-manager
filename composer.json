@@ -1,6 +1,6 @@
 {
     "name": "afeefa/package-manager",
-    "version": "0.0.11",
+    "version": "0.0.13",
     "type": "library",
     "description": "Manage package versions and releases",
     "license": "MIT",

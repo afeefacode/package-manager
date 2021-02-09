@@ -4,6 +4,7 @@ namespace Afeefa\Component\Package\Commands;
 
 use Afeefa\Component\Cli\Command;
 use Afeefa\Component\Package\Helpers;
+use Afeefa\Component\Package\Package\Package;
 use Webmozart\PathUtil\Path;
 
 class Release extends Command
@@ -23,6 +24,12 @@ class Release extends Command
         // require a name in composer.json or package.json
 
         foreach ($packages as $package) {
+            if (!$package->hasPackageFile()) {
+                $packageFile = $package->getPackageFile();
+                $relativePackageFile = Path::makeRelative($packageFile, getcwd());
+                $this->abortCommand("No package file present: <info>$relativePackageFile</info>");
+            }
+
             if ($package->name === null) {
                 $packageFile = $package->getPackageFile();
                 $relativePackageFile = Path::makeRelative($packageFile, getcwd());
@@ -70,13 +77,9 @@ class Release extends Command
 
         // have everything committed beforehand
 
+        $this->checkPackageCopyClean(Package::composer()->path(getcwd()), getcwd());
         foreach ($packages as $package) {
-            try {
-                $this->runProcess('test -z "$(git status --porcelain)"', $package->path);
-            } catch (\Exception $e) {
-                $this->runProcess('git status', $package->path);
-                $this->abortCommand("Package $package->name has uncommited changes");
-            }
+            $this->checkPackageCopyClean($package, $package->path);
         }
 
         // print version info
@@ -87,6 +90,8 @@ class Release extends Command
         $this->printText('Library versions:');
         if (count($packages)) {
             foreach ($packages as $package) {
+                $package = $package->getSplitPackage() ?: $package;
+
                 $versionFile = Path::join($package->path, '.afeefa', 'package', 'release', 'version.txt');
                 $packageVersion = '';
                 if (file_exists($versionFile)) {
@@ -153,6 +158,7 @@ class Release extends Command
 
         foreach ($packages as $package) {
             $this->printActionTitle("Update version of $package->name");
+
             // package version (if supported)
 
             $versionFile = Path::join($package->path, '.afeefa', 'package', 'release', 'version.txt');
@@ -170,12 +176,12 @@ class Release extends Command
             $this->printBullet("$package->name: <info>$nextVersion</info>");
         }
 
-        // push new versions
+        // show diffs
 
         foreach ($packages as $package) {
             $this->printActionTitle("Diff for package $package->name");
 
-            $this->runProcess('git diff', $package->path);
+            $this->runProcess('git --no-pager diff', $package->path);
         }
 
         $shouldCommit = $this->printConfirm('Shall these changes be committed and pushed to upstream?');
@@ -184,15 +190,57 @@ class Release extends Command
             $this->abortCommand();
         }
 
+        // copy all split libraries
+
         foreach ($packages as $package) {
+            if ($package->splitPath) {
+                $this->runProcess('git reset HEAD --hard', $package->splitPath);
+                $this->runProcess('git clean -fd', $package->splitPath);
+                $this->checkPackageCopyClean($package, $package->splitPath);
+
+                $rsync = <<<EOL
+rsync -rtvuc
+--exclude .git
+--exclude vendor
+--exclude node_modules
+--delete
+$package->path/ $package->splitPath/
+EOL;
+
+                $this->runProcess($rsync);
+            }
+        }
+
+        // push new versions
+
+        $this->runProcesses([
+            'git add .',
+            'git commit -m "set version: v' . $nextVersion . '"',
+            'git push'
+        ], getcwd());
+
+        foreach ($packages as $package) {
+            $packagePath = $package->splitPath ?: $package->path;
+
             $this->runProcesses([
-                'git commit -am "set version: v' . $nextVersion . '"',
+                'git add .',
+                'git commit -m "set version: v' . $nextVersion . '"',
                 'git push',
                 'git tag v' . $nextVersion,
                 'git push origin v' . $nextVersion
-            ], $package->path);
+            ], $packagePath);
 
             $this->printBullet("<info>Finish</info>: $package->name has now version $nextVersion");
+        }
+    }
+
+    private function checkPackageCopyClean(Package $package, string $path)
+    {
+        try {
+            $this->runProcess('test -z "$(git status --porcelain)"', $path);
+        } catch (\Exception $e) {
+            $this->runProcess('git status', $path);
+            $this->abortCommand("Package $package->name has uncommited changes");
         }
     }
 }

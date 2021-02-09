@@ -11,11 +11,9 @@ class Package
     const TYPE_COMPOSER = 'php';
     const TYPE_NPM = 'js';
 
-    public $type = null;
-    public $path = null;
-    public $files = [];
-
-    public $installAction;
+    public $type;
+    public $path;
+    public $splitPath;
 
     public static function composer(): Composer
     {
@@ -39,12 +37,22 @@ class Package
         return $this;
     }
 
+    public function split($splitPath): Package
+    {
+        $this->splitPath = $splitPath;
+        return $this;
+    }
+
+    public function getSplitPackage(): ?Package
+    {
+        if ($this->splitPath) {
+            return (new static())->path($this->splitPath);
+        }
+        return null;
+    }
+
     public function hasInstallAction(): bool
     {
-        if ($this->installAction) {
-            return true;
-        }
-
         $installFile = Path::join($this->path, '.afeefa', 'package', 'install', 'install.php');
 
         return file_exists($installFile);
@@ -54,11 +62,11 @@ class Package
     {
         $installFile = Path::join($this->path, '.afeefa', 'package', 'install', 'install.php');
 
-        if (!$this->installAction && file_exists($installFile)) {
-            $this->installAction = include $installFile;
+        if (file_exists($installFile)) {
+            return include $installFile;
         }
 
-        return $this->installAction;
+        return null;
     }
 
     public function __get($property)
@@ -90,6 +98,11 @@ class Package
     public function getPackageFile(): string
     {
         return '';
+    }
+
+    public function hasPackageFile(): bool
+    {
+        return file_exists($this->getPackageFile());
     }
 
     protected function getName(): ?string

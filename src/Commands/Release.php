@@ -158,13 +158,13 @@ class Release extends Command
             $packageFile = $package->getPackageFile();
             $content = file_get_contents($packageFile);
             $content = preg_replace('/"version": ".+?"/', "\"version\": \"$version\"", $content);
-            file_put_contents($file, $content);
+            file_put_contents($packageFile, $content);
         }
 
         // push new versions
 
         foreach ($packages as $package) {
-            $this->runProcess('git diff', $package);
+            $this->runProcess('git diff', $package->path);
         }
 
         $shouldCommit = $this->printConfirm('Shall these changes be committed and pushed to upstream?');

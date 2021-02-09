@@ -33,7 +33,7 @@ class Release extends Command
                     $this->replaceInFile($packageFile, function ($content) use ($packageName) {
                         return preg_replace(
                             '/^\{/',
-                            "{\n\t\t\"name\": \"$packageName\",",
+                            "{\n        \"name\": \"$packageName\",",
                             $content
                         );
                     });

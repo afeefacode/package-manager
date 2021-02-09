@@ -76,14 +76,6 @@ class Package
         }
     }
 
-    public function setVersion(string $version): void
-    {
-        $file = $this->getPackageFile();
-        $content = file_get_contents($this->getPackageFile());
-        $content = preg_replace('/"version": ".+?"/', "\"version\": \"$version\"", $content);
-        file_put_contents($file, $content);
-    }
-
     public function getReleaseManager(): ?ReleaseManager
     {
         $releaseFile = Path::join($this->path, '.afeefa', 'package', 'release.php');

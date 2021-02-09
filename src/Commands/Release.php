@@ -70,12 +70,16 @@ class Release extends Command
 
         // have everything committed beforehand
 
-        try {
-            $this->runProcess('test -z "$(git status --porcelain)"');
-        } catch (\Exception $e) {
-            $this->runProcess('git status');
-            $this->abortCommand('You need to commit all changes prior to release.');
+        foreach ($packages as $package) {
+            try {
+                $this->runProcess('test -z "$(git status --porcelain)"', $package->path);
+            } catch (\Exception $e) {
+                $this->runProcess('git status', $package->path);
+                $this->abortCommand('You need to commit all changes prior to release.');
+            }
         }
+
+        // print version info
 
         $version = Helpers::getVersion();
 
@@ -129,19 +133,39 @@ class Release extends Command
             $this->abortCommand();
         }
 
+        // store version in version.txt
+
         $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'release', 'version.txt');
         $versionFileRelative = Path::makeRelative($versionFile, getcwd());
 
         $this->printShellCommand("file_put_contents($versionFileRelative, '0.0.0')");
         file_put_contents($versionFile, "$nextVersion\n");
 
+        // update packages
+
         $packages = Helpers::getReleasePackages();
 
         foreach ($packages as $package) {
-            $package->setVersion($nextVersion);
+            // package version (if supported)
+
+            $versionFile = Path::join($package->path, '.afeefa', 'package', 'release', 'version.txt');
+            if (file_exists($versionFile)) {
+                file_put_contents($versionFile, "$version\n");
+            }
+
+            // composer version
+
+            $packageFile = $package->getPackageFile();
+            $content = file_get_contents($packageFile);
+            $content = preg_replace('/"version": ".+?"/', "\"version\": \"$version\"", $content);
+            file_put_contents($file, $content);
         }
 
-        $this->runProcess('git diff');
+        // push new versions
+
+        foreach ($packages as $package) {
+            $this->runProcess('git diff', $package);
+        }
 
         $shouldCommit = $this->printConfirm('Shall these changes be committed and pushed to upstream?');
 
@@ -149,10 +173,10 @@ class Release extends Command
             $this->abortCommand();
         }
 
-        $this->runProcess('git commit -am "set version: v' . $nextVersion . '"');
-        $this->runProcess('git push');
+        // $this->runProcess('git commit -am "set version: v' . $nextVersion . '"');
+        // $this->runProcess('git push');
 
-        $this->runProcess('git tag v' . $nextVersion);
-        $this->runProcess('git push origin v' . $nextVersion);
+        // $this->runProcess('git tag v' . $nextVersion);
+        // $this->runProcess('git push origin v' . $nextVersion);
     }
 }

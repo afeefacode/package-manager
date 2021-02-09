@@ -2,7 +2,6 @@
 
 namespace Afeefa\Component\Package\Package;
 
-use Afeefa\Component\Package\InstallAction;
 use Afeefa\Component\Package\ReleaseManager;
 use Symfony\Component\Process\Process;
 use Webmozart\PathUtil\Path;
@@ -101,10 +100,10 @@ class Package
         return '';
     }
 
-    protected function getName(): string
+    protected function getName(): ?string
     {
         $json = $this->getPackageFileJson();
-        return $json->name;
+        return $json->name ?? null;
     }
 
     protected function getVersion(): ?string

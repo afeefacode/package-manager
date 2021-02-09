@@ -20,6 +20,30 @@ class Release extends Command
             $this->abortCommand('Setup missing: Run afeefa-package setup afeefa/package-manager');
         }
 
+        // require a name in composer.json or package.json
+
+        foreach ($packages as $package) {
+            if ($package->name === null) {
+                $packageFile = $package->getPackageFile();
+                $relativePackageFile = Path::makeRelative($packageFile, getcwd());
+                $this->printInfo('There is no name field in ' . $relativePackageFile);
+                $packageName = $this->printQuestion('Create that name field? Just type in a package name:', 'afeefa/my-new-package');
+                $createNameField = $this->printConfirm("$packageName Is this name okay?");
+                if ($createNameField) {
+                    $this->replaceInFile($packageFile, function ($content) use ($packageName) {
+                        return preg_replace(
+                            '/^\{/',
+                            "{\n\t\t\"name\": \"$packageName\",",
+                            $content
+                        );
+                    });
+                    $this->printBullet("Name field added in <info>$packageFile</info>");
+                } else {
+                    $this->abortCommand('Name field required');
+                }
+            }
+        }
+
         // require a version in composer.json or package.json
 
         foreach ($packages as $package) {

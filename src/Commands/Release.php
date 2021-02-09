@@ -178,9 +178,12 @@ class Release extends Command
 
         // show diffs
 
+        $package = Package::composer()->path(getcwd());
+        $this->printActionTitle("Diff for package $package->name");
+        $this->runProcess('git --no-pager diff', $package->path);
+
         foreach ($packages as $package) {
             $this->printActionTitle("Diff for package $package->name");
-
             $this->runProcess('git --no-pager diff', $package->path);
         }
 

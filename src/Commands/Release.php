@@ -75,7 +75,7 @@ class Release extends Command
                 $this->runProcess('test -z "$(git status --porcelain)"', $package->path);
             } catch (\Exception $e) {
                 $this->runProcess('git status', $package->path);
-                $this->abortCommand('You need to commit all changes prior to release.');
+                $this->abortCommand("Package $package->name has uncommited changes");
             }
         }
 
@@ -146,6 +146,7 @@ class Release extends Command
         $packages = Helpers::getReleasePackages();
 
         foreach ($packages as $package) {
+            $this->printActionTitle("Update version of $package->name");
             // package version (if supported)
 
             $versionFile = Path::join($package->path, '.afeefa', 'package', 'release', 'version.txt');
@@ -164,6 +165,8 @@ class Release extends Command
         // push new versions
 
         foreach ($packages as $package) {
+            $this->printActionTitle("Diff for package $package->name");
+
             $this->runProcess('git diff', $package->path);
         }
 

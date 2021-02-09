@@ -19,10 +19,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Afeefa\\Component\\Package\\": [
-                "src",
-                ".afeefa/package"
-            ]
+            "Afeefa\\Component\\Package\\": "src"
         }
     },
     "bin": [

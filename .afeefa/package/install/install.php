@@ -14,8 +14,8 @@ class Install extends PackageInstall
     {
         $this->createFiles([
             Files::file()
-                ->path(Path::join($this->projectConfigPath, 'release', 'release.php'))
-                ->template(Path::join($this->packageConfigPath, 'install', 'templates', 'release.php')),
+                ->path(Path::join($this->projectConfigPath, 'release', 'packages.php'))
+                ->template(Path::join($this->packageConfigPath, 'install', 'templates', 'packages.php')),
 
             Files::file()
                 ->path(Path::join($this->projectConfigPath, 'release', 'version.txt'))

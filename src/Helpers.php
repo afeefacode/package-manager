@@ -8,11 +8,10 @@ class Helpers
 {
     public static function getReleasePackages(): array
     {
-        $release = Path::join(getcwd(), '.afeefa', 'package', 'release', 'release.php');
+        $packages = Path::join(getcwd(), '.afeefa', 'package', 'release', 'packages.php');
 
-        if (file_exists($release)) {
-            $releaseManager = include $release;
-            return $releaseManager->getPackages();
+        if (file_exists($packages)) {
+            return include $packages;
         }
 
         return [];

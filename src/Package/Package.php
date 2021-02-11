@@ -2,7 +2,6 @@
 
 namespace Afeefa\Component\Package\Package;
 
-use Afeefa\Component\Package\ReleaseManager;
 use Symfony\Component\Process\Process;
 use Webmozart\PathUtil\Path;
 
@@ -82,17 +81,6 @@ class Package
         if ($property === 'tag') {
             return $this->getTag();
         }
-    }
-
-    public function getReleaseManager(): ?ReleaseManager
-    {
-        $releaseFile = Path::join($this->path, '.afeefa', 'package', 'release.php');
-
-        if (file_exists($releaseFile)) {
-            return include $releaseFile;
-        }
-
-        return null;
     }
 
     public function getPackageFile(): string

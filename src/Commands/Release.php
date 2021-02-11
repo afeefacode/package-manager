@@ -102,7 +102,7 @@ class Release extends Command
                 $this->printText(" - $package->name: $packageVersion<info>$package->version</info> (<fg=blue>$file</>) <info>$package->tag</info> (<fg=blue>git tag</>)");
             }
         } else {
-            $this->printBullet('No packages defined yet in .afeefa/package/release.php');
+            $this->printBullet('No packages defined yet in .afeefa/package/packages.php');
         }
 
         // select next version

@@ -11,25 +11,30 @@ class Release extends Command
 {
     protected function executeCommand()
     {
-        $packages = Helpers::getReleasePackages();
+        $rootPackage = Helpers::getRootPackage();
+        $releasePackages = Helpers::getReleasePackages();
         $version = Helpers::getVersion();
 
-        // require afeefa-package to be setup
+        // require afeefa/afeefa-package to be setup
 
         $installMarker = Path::join(getcwd(), '.afeefa', 'package', '.installed');
         if (!file_exists($installMarker)) {
             $this->abortCommand('Setup missing: Run afeefa-package setup afeefa/package-manager');
         }
 
-        // require a name in composer.json or package.json
+        // require composer.json or package.json for each release package
 
-        foreach ($packages as $package) {
+        foreach ($releasePackages as $package) {
             if (!$package->hasPackageFile()) {
                 $packageFile = $package->getPackageFile();
                 $relativePackageFile = Path::makeRelative($packageFile, getcwd());
                 $this->abortCommand("No package file present: <info>$relativePackageFile</info>");
             }
+        }
 
+        // require a name in release packages composer.json or package.json
+
+        foreach ($releasePackages as $package) {
             if ($package->name === null) {
                 $packageFile = $package->getPackageFile();
                 $relativePackageFile = Path::makeRelative($packageFile, getcwd());
@@ -51,9 +56,9 @@ class Release extends Command
             }
         }
 
-        // require a version in composer.json or package.json
+        // require a version in release packages composer.json or package.json
 
-        foreach ($packages as $package) {
+        foreach ($releasePackages as $package) {
             if ($package->version === null) {
                 $packageFile = $package->getPackageFile();
                 $relativePackageFile = Path::makeRelative($packageFile, getcwd());
@@ -77,29 +82,24 @@ class Release extends Command
 
         // have everything committed beforehand
 
-        $this->checkPackageCopyClean(Package::composer()->path(getcwd()), getcwd());
-        foreach ($packages as $package) {
-            $this->checkPackageCopyClean($package, $package->path);
+        $this->checkPackageCopyClean($rootPackage, $rootPackage->path);
+        foreach ($releasePackages as $package) {
+            $packageIsOutsideWorkingCopy = !Path::isBasePath($rootPackage->path, $package->path);
+            if ($packageIsOutsideWorkingCopy) {
+                $this->checkPackageCopyClean($package, $package->path);
+            }
+
         }
 
         // print version info
 
-        $version = Helpers::getVersion();
-
         $this->printText("Project version is: <info>$version</info> (<fg=blue>.afeefa/package/release/version.txt</>)");
         $this->printText('Library versions:');
-        if (count($packages)) {
-            foreach ($packages as $package) {
+        if (count($releasePackages)) {
+            foreach ($releasePackages as $package) {
                 $package = $package->getSplitPackage() ?: $package;
-
-                $versionFile = Path::join($package->path, '.afeefa', 'package', 'release', 'version.txt');
-                $packageVersion = '';
-                if (file_exists($versionFile)) {
-                    $packageVersion = '<info>' . trim(file_get_contents($versionFile)) . '</info> (<fg=blue>version.txt</>) ';
-                }
-
                 $file = basename($package->getPackageFile());
-                $this->printText(" - $package->name: $packageVersion<info>$package->version</info> (<fg=blue>$file</>) <info>$package->tag</info> (<fg=blue>git tag</>)");
+                $this->printText(" - $package->name: <info>$package->version</info> (<fg=blue>$file</>) <info>$package->tag</info> (<fg=blue>git tag</>)");
             }
         } else {
             $this->printBullet('No packages defined yet in .afeefa/package/packages.php');
@@ -149,24 +149,13 @@ class Release extends Command
         $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'release', 'version.txt');
         $versionFileRelative = Path::makeRelative($versionFile, getcwd());
 
-        $this->printShellCommand("file_put_contents($versionFileRelative, '0.0.0')");
+        $this->printShellCommand("file_put_contents($versionFileRelative, '$versionFile')");
         file_put_contents($versionFile, "$nextVersion\n");
 
-        // update packages
+        // update package composer/package.json version
 
-        $packages = Helpers::getReleasePackages();
-
-        foreach ($packages as $package) {
+        foreach ($releasePackages as $package) {
             $this->printActionTitle("Update version of $package->name");
-
-            // package version (if supported)
-
-            $versionFile = Path::join($package->path, '.afeefa', 'package', 'release', 'version.txt');
-            if (file_exists($versionFile)) {
-                file_put_contents($versionFile, "$nextVersion\n");
-            }
-
-            // composer version
 
             $packageFile = $package->getPackageFile();
             $content = file_get_contents($packageFile);
@@ -176,13 +165,12 @@ class Release extends Command
             $this->printBullet("$package->name: <info>$nextVersion</info>");
         }
 
-        // show diffs
+        // show diffs before autocommit
 
-        $package = Package::composer()->path(getcwd());
-        $this->printActionTitle("Diff for package $package->name");
-        $this->runProcess('git --no-pager diff', $package->path);
+        $this->printActionTitle("Diff for package $rootPackage->name");
+        $this->runProcess('git --no-pager diff', $rootPackage->path);
 
-        foreach ($packages as $package) {
+        foreach ($releasePackages as $package) {
             $this->printActionTitle("Diff for package $package->name");
             $this->runProcess('git --no-pager diff', $package->path);
         }
@@ -195,7 +183,7 @@ class Release extends Command
 
         // copy all split libraries
 
-        foreach ($packages as $package) {
+        foreach ($releasePackages as $package) {
             if ($package->splitPath) {
                 $this->runProcess('git reset HEAD --hard', $package->splitPath);
                 $this->runProcess('git clean -fd', $package->splitPath);
@@ -220,20 +208,23 @@ EOL;
             'git add .',
             'git commit -m "set version: v' . $nextVersion . '"',
             'git push'
-        ], getcwd());
+        ], $rootPackage->path);
+        $this->printBullet("<info>Finish</info>: $rootPackage->name has now version $nextVersion");
 
-        foreach ($packages as $package) {
+        foreach ($releasePackages as $package) {
             $packagePath = $package->splitPath ?: $package->path;
+            $packageIsOutsideWorkingCopy = !Path::isBasePath($rootPackage->path, $packagePath);
+            if ($packageIsOutsideWorkingCopy) {
+                $this->runProcesses([
+                    'git add .',
+                    'git commit -m "set version: v' . $nextVersion . '"',
+                    'git push',
+                    'git tag v' . $nextVersion,
+                    'git push origin v' . $nextVersion
+                ], $packagePath);
 
-            $this->runProcesses([
-                'git add .',
-                'git commit -m "set version: v' . $nextVersion . '"',
-                'git push',
-                'git tag v' . $nextVersion,
-                'git push origin v' . $nextVersion
-            ], $packagePath);
-
-            $this->printBullet("<info>Finish</info>: $package->name has now version $nextVersion");
+                $this->printBullet("<info>Finish</info>: $package->name has now version $nextVersion");
+            }
         }
     }
 

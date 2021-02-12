@@ -19,7 +19,16 @@ class Install extends PackageInstall
 
             Files::file()
                 ->path(Path::join($this->projectConfigPath, 'release', 'version.txt'))
-                ->template(Path::join($this->packageConfigPath, 'install', 'templates', 'version.txt'))
+                ->template(Path::join($this->packageConfigPath, 'install', 'templates', 'version.txt')),
+
+            Files::file()
+                ->path(Path::join($this->projectConfigPath, 'release', 'split-packages', '.gitignore'))
+                ->content(<<<EOT
+*
+!.gitignore
+
+EOT
+                )
         ]);
     }
 }

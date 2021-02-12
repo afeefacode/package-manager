@@ -2,6 +2,7 @@
 
 namespace Afeefa\Component\Package;
 
+use Afeefa\Component\Package\Package\Package;
 use Webmozart\PathUtil\Path;
 
 class Helpers
@@ -15,6 +16,11 @@ class Helpers
         }
 
         return [];
+    }
+
+    public static function getRootPackage(): Package
+    {
+        return Package::composer()->path(getcwd());
     }
 
     public static function getVersion(): string

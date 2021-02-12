@@ -3,6 +3,7 @@
 namespace Afeefa\Component\Package\Commands;
 
 use Afeefa\Component\Cli\Command;
+use Afeefa\Component\Package\Helpers;
 use Afeefa\Component\Package\Package\Package;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
@@ -12,7 +13,7 @@ class Setup extends Command
 {
     protected function setArguments()
     {
-        $packages = array_keys($this->findPackagesToConfigure());
+        $packages = array_keys($this->findPackagesToInstall());
         if (count($packages)) {
             $packages[] = 'all';
         }
@@ -22,7 +23,7 @@ class Setup extends Command
                 'package_name',
                 $packages,
                 InputArgument::OPTIONAL,
-                count($packages) ? 'The package to configure' : 'No packages to configure found'
+                count($packages) ? 'The package to configure' : 'No packages to configure found.'
             )
             ->addOption(
                 'reset',
@@ -37,7 +38,7 @@ class Setup extends Command
     {
         $packageName = $this->getArgument('package_name');
 
-        $packages = $this->findPackagesToConfigure();
+        $packages = $this->findPackagesToInstall();
 
         $packages = $packageName === 'all' ? $packages : [$packages[$packageName]];
 
@@ -53,15 +54,15 @@ class Setup extends Command
         }
     }
 
-    private function findPackagesToConfigure(): array
+    private function findPackagesToInstall(): array
     {
         // find all packages that can be installed
         $packages = [];
 
-        // self package
-        $package = Package::composer()->path(getcwd());
-        if ($package->hasInstallAction()) {
-            $packages[$package->name] = $package;
+        // root package
+        $rootPackage = Helpers::getRootPackage();
+        if ($rootPackage->hasInstallAction()) {
+            $packages[$rootPackage->name] = $rootPackage;
         }
 
         // packages from vendor

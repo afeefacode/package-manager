@@ -5,7 +5,6 @@ namespace Afeefa\Component\Package\Commands;
 use Afeefa\Component\Cli\Command;
 use Afeefa\Component\Package\Helpers;
 use Afeefa\Component\Package\Package\Package;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Webmozart\PathUtil\Path;
 
@@ -22,7 +21,6 @@ class Setup extends Command
             ->addSelectableArgument(
                 'package_name',
                 $packages,
-                InputArgument::OPTIONAL,
                 count($packages) ? 'The package to configure' : 'No packages to configure found.'
             )
             ->addOption(

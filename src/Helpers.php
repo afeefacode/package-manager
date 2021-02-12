@@ -7,6 +7,11 @@ use Webmozart\PathUtil\Path;
 
 class Helpers
 {
+    public static function getRootPackage(): Package
+    {
+        return Package::composer()->path(getcwd());
+    }
+
     public static function getReleasePackages(): array
     {
         $packages = Path::join(getcwd(), '.afeefa', 'package', 'release', 'packages.php');
@@ -16,11 +21,6 @@ class Helpers
         }
 
         return [];
-    }
-
-    public static function getRootPackage(): Package
-    {
-        return Package::composer()->path(getcwd());
     }
 
     public static function getVersion(): string

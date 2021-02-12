@@ -2,7 +2,6 @@
 
 namespace Afeefa\Component\Package\Package;
 
-use Symfony\Component\Process\Process;
 use Webmozart\PathUtil\Path;
 
 class Package
@@ -12,7 +11,7 @@ class Package
 
     public $type;
     public $path;
-    public $splitPath;
+    public $splitRepo;
 
     public static function composer(): Composer
     {
@@ -24,30 +23,16 @@ class Package
         return new Npm();
     }
 
-    public function type($type): Package
-    {
-        $this->type = $type;
-        return $this;
-    }
-
     public function path($path): Package
     {
         $this->path = $path;
         return $this;
     }
 
-    public function split($splitPath): Package
+    public function split($splitRepo): Package
     {
-        $this->splitPath = $splitPath;
+        $this->splitRepo = $splitRepo;
         return $this;
-    }
-
-    public function getSplitPackage(): ?Package
-    {
-        if ($this->splitPath) {
-            return (new static())->path($this->splitPath);
-        }
-        return null;
     }
 
     public function hasInstallAction(): bool
@@ -78,8 +63,8 @@ class Package
             return $this->getVersion();
         }
 
-        if ($property === 'tag') {
-            return $this->getTag();
+        if ($property === 'split') {
+            return !!$this->splitRepo;
         }
     }
 
@@ -103,14 +88,6 @@ class Package
     {
         $json = $this->getPackageFileJson();
         return $json->version ?? null;
-    }
-
-    protected function getTag(): string
-    {
-        $command = 'git describe --tags --abbrev=0';
-        $process = Process::fromShellCommandline($command, $this->path);
-        $process->run();
-        return trim($process->getOutput());
     }
 
     protected function getPackageFileJson(): \stdClass

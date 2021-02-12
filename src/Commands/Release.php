@@ -88,7 +88,22 @@ class Release extends Command
             if ($packageIsOutsideWorkingCopy) {
                 $this->checkPackageCopyClean($package, $package->path);
             }
+        }
 
+        // create release folders for split packages
+
+        foreach ($releasePackages as $package) {
+            if ($package->split) {
+                $releaseFolder = $this->getPackageReleaseFolder($package);
+                if (!file_exists($releaseFolder)) {
+                    $this->printActionTitle("Create release folder for split package: $package->name");
+                    $this->runProcess("mkdir -p $releaseFolder");
+                    $this->runProcess("git clone $package->splitRepo .", $releaseFolder);
+
+                    $relativeReleaseFolder = Path::makeRelative($releaseFolder, getcwd());
+                    $this->printBullet("<info>Finish:</info> Created folder <fg=blue>$relativeReleaseFolder</>");
+                }
+            }
         }
 
         // print version info
@@ -97,9 +112,10 @@ class Release extends Command
         $this->printText('Library versions:');
         if (count($releasePackages)) {
             foreach ($releasePackages as $package) {
-                $package = $package->getSplitPackage() ?: $package;
+                $package = $this->getReleasePackage($package);
                 $file = basename($package->getPackageFile());
-                $this->printText(" - $package->name: <info>$package->version</info> (<fg=blue>$file</>) <info>$package->tag</info> (<fg=blue>git tag</>)");
+                $tag = $this->getTag($package->path);
+                $this->printText(" - $package->name: <info>$package->version</info> (<fg=blue>$file</>) <info>$tag</info> (<fg=blue>git tag</>)");
             }
         } else {
             $this->printBullet('No packages defined yet in .afeefa/package/packages.php');
@@ -184,10 +200,14 @@ class Release extends Command
         // copy all split libraries
 
         foreach ($releasePackages as $package) {
-            if ($package->splitPath) {
-                $this->runProcess('git reset HEAD --hard', $package->splitPath);
-                $this->runProcess('git clean -fd', $package->splitPath);
-                $this->checkPackageCopyClean($package, $package->splitPath);
+            if ($package->split) {
+                $this->printActionTitle("Reset split package $package->name");
+
+                $releaseFolder = $this->getPackageReleaseFolder($package);
+                $this->runProcess('git reset HEAD --hard', $releaseFolder);
+                $this->runProcess('git clean -fd', $releaseFolder);
+                $this->runProcess('git pull --rebase', $releaseFolder);
+                $this->checkPackageCopyClean($package, $releaseFolder);
 
                 $rsync = <<<EOL
 rsync -rtvuc
@@ -195,14 +215,20 @@ rsync -rtvuc
 --exclude vendor
 --exclude node_modules
 --delete
-$package->path/ $package->splitPath/
+$package->path/ $releaseFolder/
 EOL;
 
                 $this->runProcess($rsync);
+
+                $this->printBullet("<info>Finish:</info> Split package $package->name reset");
             }
         }
 
         // push new versions
+
+        $this->printActionTitle('Commit and push new versions to branches');
+
+        $this->printSubActionTitle($rootPackage->name);
 
         $this->runProcesses([
             'git add .',
@@ -212,16 +238,18 @@ EOL;
         $this->printBullet("<info>Finish</info>: $rootPackage->name has now version $nextVersion");
 
         foreach ($releasePackages as $package) {
-            $packagePath = $package->splitPath ?: $package->path;
-            $packageIsOutsideWorkingCopy = !Path::isBasePath($rootPackage->path, $packagePath);
+            $packageIsOutsideWorkingCopy = $package->split || !Path::isBasePath($rootPackage->path, $package->path);
             if ($packageIsOutsideWorkingCopy) {
+                $this->printSubActionTitle($package->name);
+
+                $releaseFolder = $this->getPackageReleaseFolder($package);
                 $this->runProcesses([
                     'git add .',
                     'git commit -m "set version: v' . $nextVersion . '"',
                     'git push',
                     'git tag v' . $nextVersion,
                     'git push origin v' . $nextVersion
-                ], $packagePath);
+                ], $releaseFolder);
 
                 $this->printBullet("<info>Finish</info>: $package->name has now version $nextVersion");
             }
@@ -235,6 +263,32 @@ EOL;
         } catch (\Exception $e) {
             $this->runProcess('git status', $path);
             $this->abortCommand("Package $package->name has uncommited changes");
+        }
+    }
+
+    private function getPackageReleaseFolder(Package $package): string
+    {
+        if ($package->split) {
+            return Path::join(getcwd(), '.afeefa', 'package', 'release', 'split-packages', $package->name);
+        } else {
+            return $package->path;
+        }
+    }
+
+    private function getTag($path): string
+    {
+        $command = 'git describe --tags --abbrev=0';
+        return trim($this->runProcessAndGetContents($command, $path));
+    }
+
+    private function getReleasePackage(Package $package): Package
+    {
+        if ($package->split) {
+            $releaseFolder = $this->getPackageReleaseFolder($package);
+            $Class = get_class($package);
+            return (new $Class())->path($releaseFolder);
+        } else {
+            return $package;
         }
     }
 }

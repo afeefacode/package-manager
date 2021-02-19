@@ -1,1 +1,3 @@
-# monorepo-cli-tools
+# afeefa/package-managager
+
+Setup or release an afeefa package.

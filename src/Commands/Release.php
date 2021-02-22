@@ -32,9 +32,10 @@ class Release extends Command
             }
         }
 
-        // require a name in release packages composer.json or package.json
+        // require a name in root packages composer.json AND release packages composer.json or package.json
 
-        foreach ($releasePackages as $package) {
+        $packagesToCheck = [$rootPackage, ...$releasePackages];
+        foreach ($packagesToCheck as $package) {
             if ($package->name === null) {
                 $packageFile = $package->getPackageFile();
                 $relativePackageFile = Path::makeRelative($packageFile, getcwd());
@@ -235,6 +236,18 @@ EOL;
             'git commit -m "set version: v' . $nextVersion . '"',
             'git push'
         ], $rootPackage->path);
+
+        foreach ($releasePackages as $package) {
+            if ($package->path === $rootPackage->path) {
+                $this->printSubActionTitle($rootPackage->name);
+
+                $this->runProcesses([
+                    'git tag v' . $nextVersion,
+                    'git push origin v' . $nextVersion
+                ], $package->path);
+            }
+        }
+
         $this->printBullet("<info>Finish</info>: $rootPackage->name has now version $nextVersion");
 
         foreach ($releasePackages as $package) {

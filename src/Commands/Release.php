@@ -239,8 +239,6 @@ EOL;
 
         foreach ($releasePackages as $package) {
             if ($package->path === $rootPackage->path) {
-                $this->printSubActionTitle($rootPackage->name);
-
                 $this->runProcesses([
                     'git tag v' . $nextVersion,
                     'git push origin v' . $nextVersion

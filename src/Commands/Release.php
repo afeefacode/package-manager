@@ -275,10 +275,16 @@ EOL;
         }
     }
 
-    private function getTag($path): string
+    private function getTag(string $path): string
     {
-        $command = 'git describe --tags --abbrev=0';
-        return trim($this->runProcessAndGetContents($command, $path));
+        $command = 'git tag -l';
+        $hasTag = !!trim($this->runProcessAndGetContents($command, $path));
+
+        if ($hasTag) {
+            $command = 'git describe --tags --abbrev=0';
+            return trim($this->runProcessAndGetContents($command, $path));
+        }
+        return 'no tag yet';
     }
 
     private function getReleasePackage(Package $package): Package

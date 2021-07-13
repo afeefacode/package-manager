@@ -208,7 +208,7 @@ class Release extends Command
                 $this->checkPackageCopyClean($package, $releaseFolder);
 
                 $rsync = <<<EOL
-                    rsync -rtvuc
+                    rsync -rtvc
                     --exclude .git
                     --exclude vendor
                     --exclude node_modules

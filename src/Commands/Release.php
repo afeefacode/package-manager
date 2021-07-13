@@ -28,7 +28,7 @@ class Release extends Command
             if (!$package->hasPackageFile()) {
                 $packageFile = $package->getPackageFile();
                 $relativePackageFile = Path::makeRelative($packageFile, getcwd());
-                $this->abortCommand("No package file present: <info>$relativePackageFile</info>");
+                $this->abortCommand("No package file present: <info>{$relativePackageFile}</info>");
             }
         }
 
@@ -41,16 +41,16 @@ class Release extends Command
                 $relativePackageFile = Path::makeRelative($packageFile, getcwd());
                 $this->printInfo('There is no name field in ' . $relativePackageFile);
                 $packageName = $this->printQuestion('Create that name field? Just type in a package name:', 'afeefa/my-new-package');
-                $createNameField = $this->printConfirm("$packageName Is this name okay?");
+                $createNameField = $this->printConfirm("{$packageName} Is this name okay?");
                 if ($createNameField) {
                     $this->replaceInFile($packageFile, function ($content) use ($packageName) {
                         return preg_replace(
                             '/^\{/',
-                            "{\n        \"name\": \"$packageName\",",
+                            "{\n        \"name\": \"{$packageName}\",",
                             $content
                         );
                     });
-                    $this->printBullet("Name field added in <info>$packageFile</info>");
+                    $this->printBullet("Name field added in <info>{$packageFile}</info>");
                 } else {
                     $this->abortCommand('Name field required');
                 }
@@ -70,11 +70,11 @@ class Release extends Command
                         $packageNamePattern = preg_quote($package->name, '/');
                         return preg_replace(
                             '/^(\s+)("name": "' . $packageNamePattern . '",\n)/m',
-                            "$1$2$1\"version\": \"$version\",\n",
+                            "$1$2$1\"version\": \"{$version}\",\n",
                             $content
                         );
                     });
-                    $this->printBullet("Version field added in <info>$packageFile</info>");
+                    $this->printBullet("Version field added in <info>{$packageFile}</info>");
                 } else {
                     $this->abortCommand('Version field required');
                 }
@@ -97,26 +97,26 @@ class Release extends Command
             if ($package->split) {
                 $releaseFolder = $this->getPackageReleaseFolder($package);
                 if (!file_exists($releaseFolder)) {
-                    $this->printActionTitle("Create release folder for split package: $package->name");
-                    $this->runProcess("mkdir -p $releaseFolder");
-                    $this->runProcess("git clone $package->splitRepo .", $releaseFolder);
+                    $this->printActionTitle("Create release folder for split package: {$package->name}");
+                    $this->runProcess("mkdir -p {$releaseFolder}");
+                    $this->runProcess("git clone {$package->splitRepo} .", $releaseFolder);
 
                     $relativeReleaseFolder = Path::makeRelative($releaseFolder, getcwd());
-                    $this->printBullet("<info>Finish:</info> Created folder <fg=blue>$relativeReleaseFolder</>");
+                    $this->printBullet("<info>Finish:</info> Created folder <fg=blue>{$relativeReleaseFolder}</>");
                 }
             }
         }
 
         // print version info
 
-        $this->printText("Project version is: <info>$version</info> (<fg=blue>.afeefa/package/release/version.txt</>)");
+        $this->printText("Project version is: <info>{$version}</info> (<fg=blue>.afeefa/package/release/version.txt</>)");
         $this->printText('Library versions:');
         if (count($releasePackages)) {
             foreach ($releasePackages as $package) {
                 $package = $this->getReleasePackage($package);
                 $file = basename($package->getPackageFile());
                 $tag = $this->getTag($package->path);
-                $this->printText(" - $package->name: <info>$package->version</info> (<fg=blue>$file</>) <info>$tag</info> (<fg=blue>git tag</>)");
+                $this->printText(" - {$package->name}: <info>{$package->version}</info> (<fg=blue>{$file}</>) <info>{$tag}</info> (<fg=blue>git tag</>)");
             }
         } else {
             $this->printBullet('No packages defined yet in .afeefa/package/packages.php');
@@ -127,8 +127,8 @@ class Release extends Command
         [$major, $minor, $patch] = explode('.', $version);
 
         $nextMajor = ($major + 1) . '.0.0';
-        $nextMinor = "$major." . ($minor + 1) . '.0';
-        $nextPatch = "$major.$minor." . ($patch + 1);
+        $nextMinor = "{$major}." . ($minor + 1) . '.0';
+        $nextPatch = "{$major}.{$minor}." . ($patch + 1);
 
         $choice = $this->printChoice('Increase version', [
             'Major -> ' . $nextMajor,
@@ -142,19 +142,16 @@ class Release extends Command
 
         if (preg_match('/Major/', $choice)) {
             $nextVersion = $nextMajor;
-            $setVersion = $this->printConfirm("Increase major version from $version -> " . $nextMajor);
-
-        } else if (preg_match('/Minor/', $choice)) {
+            $setVersion = $this->printConfirm("Increase major version from {$version} -> " . $nextMajor);
+        } elseif (preg_match('/Minor/', $choice)) {
             $nextVersion = $nextMinor;
-            $setVersion = $this->printConfirm("Increase minor version from $version -> " . $nextMinor);
-
-        } else if (preg_match('/Patch/', $choice)) {
+            $setVersion = $this->printConfirm("Increase minor version from {$version} -> " . $nextMinor);
+        } elseif (preg_match('/Patch/', $choice)) {
             $nextVersion = $nextPatch;
-            $setVersion = $this->printConfirm("Increase patch version from $version -> " . $nextPatch);
-
+            $setVersion = $this->printConfirm("Increase patch version from {$version} -> " . $nextPatch);
         } else {
             $nextVersion = $this->printQuestion('Type in a version to set', $nextPatch);
-            $setVersion = $this->printConfirm("Increase patch version from $version -> " . $nextVersion);
+            $setVersion = $this->printConfirm("Increase patch version from {$version} -> " . $nextVersion);
         }
 
         if (!$setVersion) {
@@ -166,29 +163,29 @@ class Release extends Command
         $versionFile = Path::join(getcwd(), '.afeefa', 'package', 'release', 'version.txt');
         $versionFileRelative = Path::makeRelative($versionFile, getcwd());
 
-        $this->printShellCommand("file_put_contents($versionFileRelative, '$versionFile')");
-        file_put_contents($versionFile, "$nextVersion\n");
+        $this->printShellCommand("file_put_contents({$versionFileRelative}, '{$versionFile}')");
+        file_put_contents($versionFile, "{$nextVersion}\n");
 
         // update package composer/package.json version
 
         foreach ($releasePackages as $package) {
-            $this->printActionTitle("Update version of $package->name");
+            $this->printActionTitle("Update version of {$package->name}");
 
             $packageFile = $package->getPackageFile();
             $content = file_get_contents($packageFile);
-            $content = preg_replace('/"version": ".+?"/', "\"version\": \"$nextVersion\"", $content);
+            $content = preg_replace('/"version": ".+?"/', "\"version\": \"{$nextVersion}\"", $content);
             file_put_contents($packageFile, $content);
 
-            $this->printBullet("$package->name: <info>$nextVersion</info>");
+            $this->printBullet("{$package->name}: <info>{$nextVersion}</info>");
         }
 
         // show diffs before autocommit
 
-        $this->printActionTitle("Diff for package $rootPackage->name");
+        $this->printActionTitle("Diff for package {$rootPackage->name}");
         $this->runProcess('git --no-pager diff', $rootPackage->path);
 
         foreach ($releasePackages as $package) {
-            $this->printActionTitle("Diff for package $package->name");
+            $this->printActionTitle("Diff for package {$package->name}");
             $this->runProcess('git --no-pager diff', $package->path);
         }
 
@@ -202,7 +199,7 @@ class Release extends Command
 
         foreach ($releasePackages as $package) {
             if ($package->split) {
-                $this->printActionTitle("Reset split package $package->name");
+                $this->printActionTitle("Reset split package {$package->name}");
 
                 $releaseFolder = $this->getPackageReleaseFolder($package);
                 $this->runProcess('git reset HEAD --hard', $releaseFolder);
@@ -211,17 +208,17 @@ class Release extends Command
                 $this->checkPackageCopyClean($package, $releaseFolder);
 
                 $rsync = <<<EOL
-rsync -rtvuc
---exclude .git
---exclude vendor
---exclude node_modules
---delete
-$package->path/ $releaseFolder/
-EOL;
+                    rsync -rtvuc
+                    --exclude .git
+                    --exclude vendor
+                    --exclude node_modules
+                    --delete
+                    {$package->path}/ {$releaseFolder}/
+                    EOL;
 
                 $this->runProcess($rsync);
 
-                $this->printBullet("<info>Finish:</info> Split package $package->name reset");
+                $this->printBullet("<info>Finish:</info> Split package {$package->name} reset");
             }
         }
 
@@ -246,7 +243,7 @@ EOL;
             }
         }
 
-        $this->printBullet("<info>Finish</info>: $rootPackage->name has now version $nextVersion");
+        $this->printBullet("<info>Finish</info>: {$rootPackage->name} has now version {$nextVersion}");
 
         foreach ($releasePackages as $package) {
             $packageIsOutsideWorkingCopy = $package->split || !Path::isBasePath($rootPackage->path, $package->path);
@@ -262,7 +259,7 @@ EOL;
                     'git push origin v' . $nextVersion
                 ], $releaseFolder);
 
-                $this->printBullet("<info>Finish</info>: $package->name has now version $nextVersion");
+                $this->printBullet("<info>Finish</info>: {$package->name} has now version {$nextVersion}");
             }
         }
     }
@@ -273,7 +270,7 @@ EOL;
             $this->runProcess('test -z "$(git status --porcelain)"', $path);
         } catch (\Exception $e) {
             $this->runProcess('git status', $path);
-            $this->abortCommand("Package $package->name has uncommited changes");
+            $this->abortCommand("Package {$package->name} has uncommited changes");
         }
     }
 
@@ -281,9 +278,8 @@ EOL;
     {
         if ($package->split) {
             return Path::join(getcwd(), '.afeefa', 'package', 'release', 'split-packages', $package->name);
-        } else {
-            return $package->path;
         }
+        return $package->path;
     }
 
     private function getTag(string $path): string
@@ -304,8 +300,7 @@ EOL;
             $releaseFolder = $this->getPackageReleaseFolder($package);
             $Class = get_class($package);
             return (new $Class())->path($releaseFolder);
-        } else {
-            return $package;
         }
+        return $package;
     }
 }

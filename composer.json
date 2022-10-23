@@ -15,7 +15,7 @@
         "php": ">=7.4",
         "afeefa/cli-app": "^0",
         "symfony/console": "^v5.2",
-        "webmozart/path-util": "^2.3"
+        "symfony/filesystem": "^v5.4 || ^v6.1"
     },
     "autoload": {
         "psr-4": {

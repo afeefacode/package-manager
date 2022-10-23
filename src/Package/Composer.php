@@ -2,7 +2,7 @@
 
 namespace Afeefa\Component\Package\Package;
 
-use Webmozart\PathUtil\Path;
+use Symfony\Component\Filesystem\Path;
 
 class Composer extends Package
 {

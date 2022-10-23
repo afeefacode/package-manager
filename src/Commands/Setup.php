@@ -6,7 +6,7 @@ use Afeefa\Component\Cli\Command;
 use Afeefa\Component\Package\Helpers;
 use Afeefa\Component\Package\Package\Package;
 use Symfony\Component\Console\Input\InputOption;
-use Webmozart\PathUtil\Path;
+use Symfony\Component\Filesystem\Path;
 
 class Setup extends Command
 {

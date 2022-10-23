@@ -4,7 +4,7 @@ namespace Afeefa\Component\Package\Actions;
 
 use Afeefa\Component\Cli\Action;
 use Afeefa\Component\Package\Package\Package;
-use Webmozart\PathUtil\Path;
+use Symfony\Component\Filesystem\Path;
 
 class Install extends Action
 {
@@ -60,10 +60,9 @@ class Install extends Action
 
         if (file_exists($installMarker) && !$reset) {
             $this->printBullet('<info>Already set up</info>');
-
         } else {
             $this->install();
-            $this->runProcess("touch $installMarker");
+            $this->runProcess("touch {$installMarker}");
             $this->printBullet('<info>Finished</info>');
         }
     }
@@ -77,23 +76,23 @@ class Install extends Action
         foreach ($files as $file) {
             $dir = dirname($file->path);
             if (!file_exists($dir)) {
-                $this->runProcess("mkdir -p $dir");
+                $this->runProcess("mkdir -p {$dir}");
                 $relativeDir = Path::makeRelative($dir, getcwd());
-                $this->printBullet("Folder created at <info>$relativeDir</info>");
+                $this->printBullet("Folder created at <info>{$relativeDir}</info>");
             }
 
             $relativeFile = Path::makeRelative($file->path, getcwd());
 
             if ($file->template) {
-                $this->runProcess("cp $file->template $file->path");
-            } else if ($file->content) {
-                $this->printShellCommand("file_put_contents($file->path, '$file->content')");
+                $this->runProcess("cp {$file->template} {$file->path}");
+            } elseif ($file->content) {
+                $this->printShellCommand("file_put_contents({$file->path}, '{$file->content}')");
                 file_put_contents($file->path, $file->content);
             } else {
-                $this->runProcess("touch $file->path");
+                $this->runProcess("touch {$file->path}");
             }
 
-            $this->printBullet("File created at <info>$relativeFile</info>");
+            $this->printBullet("File created at <info>{$relativeFile}</info>");
         }
     }
 }

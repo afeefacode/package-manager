@@ -5,7 +5,7 @@ namespace Afeefa\Component\Package\Commands;
 use Afeefa\Component\Cli\Command;
 use Afeefa\Component\Package\Helpers;
 use Afeefa\Component\Package\Package\Package;
-use Webmozart\PathUtil\Path;
+use Symfony\Component\Filesystem\Path;
 
 class Release extends Command
 {

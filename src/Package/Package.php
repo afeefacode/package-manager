@@ -2,12 +2,12 @@
 
 namespace Afeefa\Component\Package\Package;
 
-use Webmozart\PathUtil\Path;
+use Symfony\Component\Filesystem\Path;
 
 class Package
 {
-    const TYPE_COMPOSER = 'php';
-    const TYPE_NPM = 'js';
+    public const TYPE_COMPOSER = 'php';
+    public const TYPE_NPM = 'js';
 
     public $type;
     public $path;

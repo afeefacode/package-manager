@@ -2,6 +2,7 @@
 
 namespace Afeefa\Component\Package\Package;
 
+use stdClass;
 use Symfony\Component\Filesystem\Path;
 
 class Package
@@ -92,6 +93,12 @@ class Package
 
     protected function getPackageFileJson(): \stdClass
     {
+        $packageFile = $this->getPackageFile();
+
+        if (!file_exists($packageFile)) {
+            return new stdClass();
+        }
+
         $content = file_get_contents($this->getPackageFile());
         return json_decode($content);
     }

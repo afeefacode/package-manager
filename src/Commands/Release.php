@@ -202,10 +202,17 @@ class Release extends Command
                 $this->printActionTitle("Reset split package {$package->name}");
 
                 $releaseFolder = $this->getPackageReleaseFolder($package);
-                $this->runProcess('git reset HEAD --hard', $releaseFolder);
-                $this->runProcess('git clean -fd', $releaseFolder);
-                $this->runProcess('git pull --rebase', $releaseFolder);
-                $this->checkPackageCopyClean($package, $releaseFolder);
+
+                $statusResult = $this->runProcessAndGetContents('git status', $releaseFolder);
+
+                if (preg_match('/No commits yet/', $statusResult)) {
+                    // first commit to split branch
+                } else {
+                    $this->runProcess('git reset HEAD --hard', $releaseFolder);
+                    $this->runProcess('git clean -fd', $releaseFolder);
+                    $this->runProcess('git pull --rebase', $releaseFolder);
+                    $this->checkPackageCopyClean($package, $releaseFolder);
+                }
 
                 $rsync = <<<EOL
                     rsync -rtvc

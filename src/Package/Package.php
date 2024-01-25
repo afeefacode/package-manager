@@ -100,6 +100,7 @@ class Package
         }
 
         $content = file_get_contents($this->getPackageFile());
+
         return json_decode($content);
     }
 }

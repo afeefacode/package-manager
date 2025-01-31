@@ -241,12 +241,14 @@ class Release extends Command
             'git push'
         ], $rootPackage->path);
 
+        $rootPackageTagSet = false; // there could be more root packages (npm + composer)
         foreach ($releasePackages as $package) {
-            if ($package->path === $rootPackage->path) {
+            if (!$rootPackageTagSet && $package->path === $rootPackage->path) {
                 $this->runProcesses([
                     'git tag v' . $nextVersion,
                     'git push origin v' . $nextVersion
                 ], $package->path);
+                $rootPackageTagSet = true;
             }
         }
 

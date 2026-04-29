@@ -7,23 +7,7 @@ CLI tool for two recurring tasks in Afeefa packages:
 
 The binary is `vendor/bin/afeefa-package` and is always run from the **project root** (the directory that contains `vendor/` and `.afeefa/`).
 
-## Installation
-
-```bash
-composer require --dev afeefa/package-manager
-```
-
-After installing, run the setup for the package manager itself once:
-
-```bash
-vendor/bin/afeefa-package setup afeefa/package-manager
-```
-
-This creates a `.afeefa/package/.installed` marker that `release` requires.
-
 ## Example project: from zero to release-ready
-
-Starting with an empty directory, here is the full path to a project that `afeefa-package release` can publish.
 
 ### 1. Create a `composer.json` with a `name`
 
@@ -35,7 +19,7 @@ Starting with an empty directory, here is the full path to a project that `afeef
 }
 ```
 
-`name` is required for both `setup` and `release`. `version` is required for any package listed in `release/packages.php` (see step 4) — it can be set later interactively, but it is easier to add it now.
+`name` is required for both `setup` and `release`. `version` is required for any package listed in `release/packages.php` (step 4) — easier to set it now than later.
 
 ### 2. Install the package manager
 
@@ -43,25 +27,23 @@ Starting with an empty directory, here is the full path to a project that `afeef
 composer require --dev afeefa/package-manager
 ```
 
-This pulls in `vendor/afeefa/package-manager/` and the `vendor/bin/afeefa-package` binary.
-
-### 3. Run setup for the package manager itself
+### 3. Set up the package manager itself
 
 ```bash
 vendor/bin/afeefa-package setup afeefa/package-manager
 ```
 
-This creates `.afeefa/package/.installed`, which `release` checks for.
+Creates `.afeefa/package/.installed`, which `release` checks for.
 
 ### 4. Add the release configuration
 
-Create `.afeefa/package/release/version.txt`:
+`.afeefa/package/release/version.txt`:
 
 ```text
 0.1.0
 ```
 
-Create `.afeefa/package/release/packages.php`:
+`.afeefa/package/release/packages.php`:
 
 ```php
 <?php
@@ -72,9 +54,9 @@ return [
 ];
 ```
 
-For an npm package use `Package::npm()` instead. To publish into a separate repo, append `->split('git@host:vendor/repo.git')`.
+See [more `packages.php` examples](#more-packagesphp-examples) below for npm packages, combined composer+npm, and split repos.
 
-### 5. Commit and link the git remote
+### 5. Initialise git
 
 ```bash
 git init
@@ -84,7 +66,7 @@ git remote add origin <url>
 git push -u origin main
 ```
 
-`release` requires a clean working copy and an upstream branch — it will run `git push` and `git push origin <tag>` for you.
+`release` requires a clean working copy and an upstream branch — it runs `git push` and `git push origin <tag>` for you.
 
 ### 6. Release
 
@@ -92,15 +74,65 @@ git push -u origin main
 vendor/bin/afeefa-package release
 ```
 
-You will be prompted for the new version (Major / Minor / Patch / custom), shown a diff, and asked to confirm. After confirmation the tool bumps `version.txt` and the `version` field in every release package, commits, tags `v<version>` and pushes — including any split repos.
+You are prompted for the next version (Major / Minor / Patch / custom), shown a diff, and asked to confirm. After confirmation the tool bumps `version.txt` and the `version` field in every release package, commits, tags `v<version>` and pushes — including any split repos.
 
-After this first release, only step 6 is needed for every subsequent release.
+After the first release, only step 6 is needed each time.
+
+## More `packages.php` examples
+
+### Composer + npm in the same directory
+
+A package that is published both to Packagist and npm from the same source tree:
+
+```php
+return [
+    Package::composer()->path(getcwd()),
+    Package::npm()->path(getcwd()),
+];
+```
+
+### npm only
+
+```php
+return [
+    Package::npm()->path(getcwd()),
+];
+```
+
+### Split repos (mono-repo with separate published packages)
+
+The source lives in one repo with sub-folders; each sub-folder is published to its own public repo. `release` keeps the split clones under `.afeefa/package/release/split-packages/<vendor>/<name>` and rsyncs the source into them on every release.
+
+```php
+use Afeefa\Component\Package\Package\Package;
+use Symfony\Component\Filesystem\Path;
+
+return [
+    Package::composer()
+        ->path(Path::join(getcwd(), 'server'))
+        ->split('git@github.com:acme/my-package-server.git'),
+
+    Package::npm()
+        ->path(Path::join(getcwd(), 'client'))
+        ->split('git@github.com:acme/my-package-client.git'),
+];
+```
+
+### Aggregator over sibling directories
+
+One project releases several sibling packages with a shared version:
+
+```php
+return [
+    Package::composer()->path(Path::join(getcwd(), '..', 'lib-a')),
+    Package::composer()->path(Path::join(getcwd(), '..', 'lib-b')),
+    Package::composer()->path(Path::join(getcwd(), '..', 'lib-c')),
+];
+```
 
 ## How `setup` works
 
-`setup` scans for packages that ship an install script and runs it.
-
-A package is considered "setupable" if it contains:
+`setup` scans for packages that ship an install script and runs it. A package is "setupable" if it contains:
 
 ```text
 .afeefa/package/install/install.php
@@ -108,12 +140,12 @@ A package is considered "setupable" if it contains:
 
 That file must `return` the fully-qualified class name of an `Install` action (a subclass of `Afeefa\Component\Package\Actions\Install`).
 
-`setup` looks for these install scripts in two places:
+`setup` looks in two places:
 
 1. **The current project itself** — `<cwd>/.afeefa/package/install/install.php`
 2. **Each composer dependency** — `<cwd>/vendor/<vendor>/<package>/.afeefa/package/install/install.php`
 
-You then pick one of the discovered packages, or `all`:
+Pick a discovered package, or `all`:
 
 ```bash
 vendor/bin/afeefa-package setup
@@ -129,14 +161,14 @@ vendor/bin/afeefa-package setup afeefa/package-manager --reset
 
 ### Writing an install action
 
-A minimal `install.php` returns the action class:
+`install.php` returns the action class:
 
 ```php
 <?php
 return \Acme\MyPackage\Install::class;
 ```
 
-The action subclasses `Afeefa\Component\Package\Actions\Install`, sets the `$configFolderName` (the subdir under `.afeefa/` to store the marker and any files), and overrides `install()`:
+The action subclasses `Afeefa\Component\Package\Actions\Install`, sets `$configFolderName`, and overrides `install()`:
 
 ```php
 class Install extends \Afeefa\Component\Package\Actions\Install
@@ -152,46 +184,23 @@ class Install extends \Afeefa\Component\Package\Actions\Install
 }
 ```
 
-The base class handles the `--reset` flag, the `.installed` marker and basic CLI output. `createFiles()` copies templates from your package into `.afeefa/<configFolderName>/` of the project.
+The base class handles `--reset`, the `.installed` marker and CLI output. `createFiles()` copies templates from your package into `.afeefa/<configFolderName>/` of the project.
 
-### Why does `setup` show "no packages to configure found"?
+### "No packages to configure found"
 
-Either:
-
-- you're not in a project root that has a `vendor/` directory, **or**
-- none of your dependencies (and not the root package itself) ship an `.afeefa/package/install/install.php`.
+Either the current directory has no `vendor/`, or none of the dependencies (and not the root package itself) ship an `.afeefa/package/install/install.php`.
 
 ## How `release` works
 
-`release` bumps the version of one or more packages, commits, tags and pushes — optionally to *split* repos (one source repo, multiple published packages).
-
-Required files under `.afeefa/package/release/`:
-
-- **`version.txt`** — current project version, e.g. `1.4.2`.
-- **`packages.php`** — returns an array of `Package` objects to be released:
-
-  ```php
-  <?php
-  use Afeefa\Component\Package\Package\Package;
-
-  return [
-      Package::composer()->path(getcwd()),                                // root composer package
-      Package::npm()->path(getcwd() . '/client'),                         // sibling npm package
-      Package::composer()
-          ->path(getcwd() . '/server')
-          ->split('git@example.com:acme/server.git'),                     // split repo
-  ];
-  ```
-
-Run:
+Run from the project root:
 
 ```bash
 vendor/bin/afeefa-package release
 ```
 
-What it does:
+The command:
 
-1. Verifies that `setup afeefa/package-manager` has been run (marker exists).
+1. Verifies that `setup afeefa/package-manager` has been run (`.installed` marker exists).
 2. Verifies `composer.json` / `package.json` are present and contain `name` (and `version` for release packages). Offers to add missing fields interactively.
 3. Aborts if any working copy is dirty.
 4. For split packages: ensures a clone exists under `.afeefa/package/release/split-packages/<vendor>/<name>`.
@@ -200,20 +209,3 @@ What it does:
 7. Shows a `git diff` for each package and asks for confirmation.
 8. For split packages: rsyncs the source into the split clone (excluding `.git`, `vendor`, `node_modules`).
 9. Commits, pushes, tags `v<version>` and pushes the tag — for the root package and every split package.
-
-## Recap: minimum required structure
-
-```text
-my-project/
-├── composer.json                       # has "name"
-├── vendor/
-│   └── afeefa/package-manager/...
-└── .afeefa/
-    └── package/
-        ├── .installed                  # created by `setup afeefa/package-manager`
-        ├── install/
-        │   └── install.php             # optional: only if your package itself is setupable
-        └── release/
-            ├── version.txt             # required for `release`
-            └── packages.php            # required for `release`
-```
